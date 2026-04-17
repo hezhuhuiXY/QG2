@@ -1,0 +1,10 @@
+POST http://localhost:8080/auth/register
+Content-Type: application/json
+
+{
+  "username": "test02",
+  "email": "test02@qq.com",
+  "phone": "13812345677",
+  "password": "123456",
+  "confirmPassword": "123456"
+}

@@ -1,0 +1,52 @@
+### 1. 注册 test02
+POST http://localhost:8080/auth/register
+Content-Type: application/json
+
+{
+  "username": "test02",
+  "email": "test02@qq.com",
+  "phone": "13812345677",
+  "password": "123456",
+  "confirmPassword": "123456"
+}
+
+### 2. 登录 test02
+POST http://localhost:8080/auth/login
+Content-Type: application/json
+
+{
+  "account": "test02",
+  "password": "123456"
+}
+
+> {%
+    client.global.set("token", response.body.data.token);
+%}
+
+### 3. 发布失物
+POST http://localhost:8080/lost-items
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "itemName": "校园卡",
+  "lostLocation": "图书馆三楼",
+  "lostTime": "2026-04-14 15:30:00",
+  "description": "蓝色卡套，可能掉在自习区",
+  "imageUrl": "http://xxx.com/card.jpg",
+  "contactInfo": "微信:test02"
+}
+
+### 4. 发布拾物
+POST http://localhost:8080/found-items
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "itemName": "钥匙",
+  "foundLocation": "西区食堂门口",
+  "foundTime": "2026-04-14 18:10:00",
+  "description": "一串钥匙，带红色挂绳",
+  "imageUrl": "http://xxx.com/key.jpg",
+  "contactInfo": "电话:13812345677"
+}

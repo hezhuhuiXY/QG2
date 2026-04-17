@@ -1,0 +1,484 @@
+### 使用说明
+# 1. 先启动后端服务，再在 IDEA 里按顺序执行本文件。
+# 2. 注册接口第一次执行会成功；如果账号已存在，再次执行可能提示已存在，可直接继续执行登录请求。
+# 2.1 这份文件会在后面修改用户A密码：从 123456 改成 12345678。
+# 2.2 如果你重复整份执行，请把下面的 userAPassword 改成数据库里的当前密码，或者换一组全新的账号重新测。
+# 3. 管理员接口依赖一个已存在的管理员账号，请先把下面的 adminAccount / adminPassword 改成你数据库里的管理员账号。
+# 4. 举报审核、置顶审核目前没有“查询列表”接口，所以 reportIdManual / topRequestIdManual 需要你先从数据库里看一下再填。
+
+@baseUrl = http://localhost:8080
+
+@userAUsername = api_user_a
+@userAEmail = api_user_a@qq.com
+@userAPhone = 13812345671
+@userAPassword = 123456
+@userANewPassword = 12345678
+
+@userBUsername = api_user_b
+@userBEmail = api_user_b@qq.com
+@userBPhone = 13812345672
+@userBPassword = 123456
+
+@lostMainName = 测试失物_校园卡_A
+@lostDeleteName = 测试失物_待删除_A
+@lostAdminDeleteName = 测试失物_管理员删除_A
+
+@foundMainName = 测试拾物_钥匙_B
+@foundDeleteName = 测试拾物_待删除_B
+@foundAdminDeleteName = 测试拾物_管理员删除_B
+
+@adminAccount = admin
+@adminPassword = 123456
+@reportIdManual = 1
+@topRequestIdManual = 1
+
+### 1. 注册用户A
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "username": "{{userAUsername}}",
+  "email": "{{userAEmail}}",
+  "phone": "{{userAPhone}}",
+  "password": "{{userAPassword}}",
+  "confirmPassword": "{{userAPassword}}"
+}
+
+### 2. 注册用户B
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "username": "{{userBUsername}}",
+  "email": "{{userBEmail}}",
+  "phone": "{{userBPhone}}",
+  "password": "{{userBPassword}}",
+  "confirmPassword": "{{userBPassword}}"
+}
+
+### 3. 登录用户A
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "account": "{{userAUsername}}",
+  "password": "{{userAPassword}}"
+}
+
+> {%
+if (response.body && response.body.code === 200 && response.body.data) {
+  client.global.set("userAToken", response.body.data.token);
+  client.global.set("userAId", response.body.data.userId);
+} else {
+  client.log("用户A登录失败，未写入 token。响应: " + JSON.stringify(response.body));
+}
+%}
+
+### 4. 登录用户B
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "account": "{{userBUsername}}",
+  "password": "{{userBPassword}}"
+}
+
+> {%
+if (response.body && response.body.code === 200 && response.body.data) {
+  client.global.set("userBToken", response.body.data.token);
+  client.global.set("userBId", response.body.data.userId);
+} else {
+  client.log("用户B登录失败，未写入 token。响应: " + JSON.stringify(response.body));
+}
+%}
+
+### 5. 用户A查看个人信息
+GET {{baseUrl}}/users/me
+Authorization: Bearer {{userAToken}}
+
+### 6. 用户A修改个人信息
+PUT {{baseUrl}}/users/profile
+Content-Type: application/json
+Authorization: Bearer {{userAToken}}
+
+{
+  "nickname": "测试用户A",
+  "avatarUrl": "https://example.com/avatar-a.png",
+  "contactInfo": "微信 api_user_a",
+  "phone": "{{userAPhone}}"
+}
+
+### 7. 用户A修改密码
+PUT {{baseUrl}}/users/password
+Content-Type: application/json
+Authorization: Bearer {{userAToken}}
+
+{
+  "oldPassword": "{{userAPassword}}",
+  "newPassword": "{{userANewPassword}}",
+  "confirmPassword": "{{userANewPassword}}"
+}
+
+### 8. 用户A用新密码重新登录
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "account": "{{userAUsername}}",
+  "password": "{{userANewPassword}}"
+}
+
+> {%
+if (response.body && response.body.code === 200 && response.body.data) {
+  client.global.set("userAToken", response.body.data.token);
+  client.global.set("userAId", response.body.data.userId);
+} else {
+  client.log("用户A重新登录失败，未更新 token。响应: " + JSON.stringify(response.body));
+}
+%}
+
+### 9. 用户A发布主失物
+POST {{baseUrl}}/lost-items
+Content-Type: application/json
+Authorization: Bearer {{userAToken}}
+
+{
+  "itemName": "{{lostMainName}}",
+  "lostLocation": "图书馆三楼",
+  "lostTime": "2026-04-16 10:00:00",
+  "description": "蓝色卡套，可能掉在自习区",
+  "imageUrl": "https://example.com/lost-main.jpg",
+  "contactInfo": "微信:api_user_a"
+}
+
+### 10. 用户A发布待删除失物
+POST {{baseUrl}}/lost-items
+Content-Type: application/json
+Authorization: Bearer {{userAToken}}
+
+{
+  "itemName": "{{lostDeleteName}}",
+  "lostLocation": "教学楼A101",
+  "lostTime": "2026-04-16 10:30:00",
+  "description": "测试删除用失物",
+  "imageUrl": "https://example.com/lost-delete.jpg",
+  "contactInfo": "电话:{{userAPhone}}"
+}
+
+### 11. 用户A发布管理员删除测试失物
+POST {{baseUrl}}/lost-items
+Content-Type: application/json
+Authorization: Bearer {{userAToken}}
+
+{
+  "itemName": "{{lostAdminDeleteName}}",
+  "lostLocation": "体育馆",
+  "lostTime": "2026-04-16 11:00:00",
+  "description": "管理员删除测试",
+  "imageUrl": "https://example.com/lost-admin-delete.jpg",
+  "contactInfo": "QQ:10001"
+}
+
+### 12. 用户B发布主拾物
+POST {{baseUrl}}/found-items
+Content-Type: application/json
+Authorization: Bearer {{userBToken}}
+
+{
+  "itemName": "{{foundMainName}}",
+  "foundLocation": "西区食堂门口",
+  "foundTime": "2026-04-16 12:00:00",
+  "description": "一串钥匙，带红色挂绳",
+  "imageUrl": "https://example.com/found-main.jpg",
+  "contactInfo": "电话:{{userBPhone}}"
+}
+
+### 13. 用户B发布待删除拾物
+POST {{baseUrl}}/found-items
+Content-Type: application/json
+Authorization: Bearer {{userBToken}}
+
+{
+  "itemName": "{{foundDeleteName}}",
+  "foundLocation": "宿舍楼下",
+  "foundTime": "2026-04-16 12:30:00",
+  "description": "测试删除用拾物",
+  "imageUrl": "https://example.com/found-delete.jpg",
+  "contactInfo": "微信:api_user_b"
+}
+
+### 14. 用户B发布管理员删除测试拾物
+POST {{baseUrl}}/found-items
+Content-Type: application/json
+Authorization: Bearer {{userBToken}}
+
+{
+  "itemName": "{{foundAdminDeleteName}}",
+  "foundLocation": "操场看台",
+  "foundTime": "2026-04-16 13:00:00",
+  "description": "管理员删除测试",
+  "imageUrl": "https://example.com/found-admin-delete.jpg",
+  "contactInfo": "QQ:10002"
+}
+
+### 15. 查询主失物并提取 lostMainId
+GET {{baseUrl}}/lost-items?itemName={{lostMainName}}&location=图书馆
+
+> {%
+const items = response.body.data || [];
+if (items.length > 0) {
+  client.global.set("lostMainId", items[0].id);
+}
+%}
+
+### 16. 查询待删除失物并提取 lostDeleteId
+GET {{baseUrl}}/lost-items?itemName={{lostDeleteName}}
+
+> {%
+const items = response.body.data || [];
+if (items.length > 0) {
+  client.global.set("lostDeleteId", items[0].id);
+}
+%}
+
+### 17. 查询管理员删除测试失物并提取 lostAdminDeleteId
+GET {{baseUrl}}/lost-items?itemName={{lostAdminDeleteName}}
+
+> {%
+const items = response.body.data || [];
+if (items.length > 0) {
+  client.global.set("lostAdminDeleteId", items[0].id);
+}
+%}
+
+### 18. 查询主拾物并提取 foundMainId
+GET {{baseUrl}}/found-items?itemName={{foundMainName}}&location=西区食堂门口
+
+> {%
+const items = response.body.data || [];
+if (items.length > 0) {
+  client.global.set("foundMainId", items[0].id);
+}
+%}
+
+### 19. 查询待删除拾物并提取 foundDeleteId
+GET {{baseUrl}}/found-items?itemName={{foundDeleteName}}
+
+> {%
+const items = response.body.data || [];
+if (items.length > 0) {
+  client.global.set("foundDeleteId", items[0].id);
+}
+%}
+
+### 20. 查询管理员删除测试拾物并提取 foundAdminDeleteId
+GET {{baseUrl}}/found-items?itemName={{foundAdminDeleteName}}
+
+> {%
+const items = response.body.data || [];
+if (items.length > 0) {
+  client.global.set("foundAdminDeleteId", items[0].id);
+}
+%}
+
+### 21. 用户A修改主失物
+PUT {{baseUrl}}/lost-items/{{lostMainId}}
+Content-Type: application/json
+Authorization: Bearer {{userAToken}}
+
+{
+  "itemName": "{{lostMainName}}",
+  "lostLocation": "图书馆四楼",
+  "lostTime": "2026-04-16 10:15:00",
+  "description": "修改后的失物描述：蓝色卡套，证件较多",
+  "imageUrl": "https://example.com/lost-main-updated.jpg",
+  "contactInfo": "微信:api_user_a_updated"
+}
+
+### 22. 用户B修改主拾物
+PUT {{baseUrl}}/found-items/{{foundMainId}}
+Content-Type: application/json
+Authorization: Bearer {{userBToken}}
+
+{
+  "itemName": "{{foundMainName}}",
+  "foundLocation": "西区食堂二楼",
+  "foundTime": "2026-04-16 12:15:00",
+  "description": "修改后的拾物描述：一串钥匙，带红色挂绳和门禁卡",
+  "imageUrl": "https://example.com/found-main-updated.jpg",
+  "contactInfo": "电话:{{userBPhone}}"
+}
+
+### 23. 用户A删除待删除失物
+DELETE {{baseUrl}}/lost-items/{{lostDeleteId}}
+Authorization: Bearer {{userAToken}}
+
+### 24. 用户B删除待删除拾物
+DELETE {{baseUrl}}/found-items/{{foundDeleteId}}
+Authorization: Bearer {{userBToken}}
+
+### 25. 用户B对用户A的失物留言
+POST {{baseUrl}}/comments
+Content-Type: application/json
+Authorization: Bearer {{userBToken}}
+
+{
+  "itemType": 1,
+  "itemId": {{lostMainId}},
+  "content": "我好像在图书馆前台见过，建议去问一下。",
+  "contactInfo": "微信:api_user_b"
+}
+
+### 26. 查询失物留言
+GET {{baseUrl}}/comments?itemType=1&itemId={{lostMainId}}
+
+### 27. 用户B给用户A发私信
+POST {{baseUrl}}/messages
+Content-Type: application/json
+Authorization: Bearer {{userBToken}}
+
+{
+  "receiverId": {{userAId}},
+  "content": "你好，我可能见过你的校园卡，可以私聊确认。"
+}
+
+### 28. 用户A查看与用户B的私信会话
+GET {{baseUrl}}/messages/{{userBId}}
+Authorization: Bearer {{userAToken}}
+
+### 29. 用户A查看通知列表并提取 notificationId
+GET {{baseUrl}}/notifications
+Authorization: Bearer {{userAToken}}
+
+> {%
+const items = response.body.data || [];
+if (items.length > 0) {
+  client.global.set("notificationId", items[0].id);
+}
+%}
+
+### 30. 用户A把第一条通知标记已读
+PUT {{baseUrl}}/notifications/{{notificationId}}/read
+Authorization: Bearer {{userAToken}}
+
+### 31. 用户B举报用户A的失物
+POST {{baseUrl}}/reports
+Content-Type: application/json
+Authorization: Bearer {{userBToken}}
+
+{
+  "itemType": 1,
+  "itemId": {{lostMainId}},
+  "reason": "测试举报流程"
+}
+
+### 32. 用户A发起失物置顶申请
+POST {{baseUrl}}/top-requests
+Content-Type: application/json
+Authorization: Bearer {{userAToken}}
+
+{
+  "lostItemId": {{lostMainId}},
+  "reason": "校园卡影响日常出入，希望优先展示",
+  "topHours": 24
+}
+
+### 33. AI 生成失物描述
+POST {{baseUrl}}/ai/lost-items/{{lostMainId}}/generate-description
+Authorization: Bearer {{userAToken}}
+
+### 34. AI 重新生成失物描述
+PUT {{baseUrl}}/ai/lost-items/{{lostMainId}}/regenerate-description
+Authorization: Bearer {{userAToken}}
+
+### 35. AI 生成拾物描述
+POST {{baseUrl}}/ai/found-items/{{foundMainId}}/generate-description
+Authorization: Bearer {{userBToken}}
+
+### 36. AI 重新生成拾物描述
+PUT {{baseUrl}}/ai/found-items/{{foundMainId}}/regenerate-description
+Authorization: Bearer {{userBToken}}
+
+### 37. 用户A标记主失物已找回
+PUT {{baseUrl}}/lost-items/{{lostMainId}}/resolve
+Authorization: Bearer {{userAToken}}
+
+### 38. 用户B标记主拾物已认领
+PUT {{baseUrl}}/found-items/{{foundMainId}}/claim
+Authorization: Bearer {{userBToken}}
+
+### 39. 登录管理员
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "account": "{{adminAccount}}",
+  "password": "{{adminPassword}}"
+}
+
+> {%
+if (response.body && response.body.code === 200 && response.body.data) {
+  client.global.set("adminToken", response.body.data.token);
+  client.global.set("adminId", response.body.data.userId);
+} else {
+  client.log("管理员登录失败，未写入 token。响应: " + JSON.stringify(response.body));
+}
+%}
+
+### 40. 管理员查看用户列表
+GET {{baseUrl}}/admin/users
+Authorization: Bearer {{adminToken}}
+
+### 41. 管理员查看平台统计
+GET {{baseUrl}}/admin/stats?startTime=2026-04-01%2000:00:00&endTime=2026-04-30%2023:59:59
+Authorization: Bearer {{adminToken}}
+
+### 42. 管理员封禁用户B
+PUT {{baseUrl}}/admin/users/{{userBId}}/ban
+Authorization: Bearer {{adminToken}}
+
+### 43. 管理员解封用户B
+PUT {{baseUrl}}/admin/users/{{userBId}}/unban
+Authorization: Bearer {{adminToken}}
+
+### 44. 管理员删除测试失物
+DELETE {{baseUrl}}/admin/lost-items/{{lostAdminDeleteId}}
+Authorization: Bearer {{adminToken}}
+
+### 45. 管理员删除测试拾物
+DELETE {{baseUrl}}/admin/found-items/{{foundAdminDeleteId}}
+Authorization: Bearer {{adminToken}}
+
+### 46. 管理员审核通过举报
+# 说明：当前项目没有“举报列表查询接口”，这里需要先把 @reportIdManual 改成真实举报 ID。
+PUT {{baseUrl}}/admin/reports/{{reportIdManual}}/approve
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "reviewRemark": "举报属实，已处理"
+}
+
+### 47. 管理员驳回举报
+# 说明：如果你要测试驳回，请把 reportIdManual 换成另一条待审核举报记录。
+PUT {{baseUrl}}/admin/reports/{{reportIdManual}}/reject
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "reviewRemark": "举报不成立，驳回"
+}
+
+### 48. 管理员审核通过置顶申请
+# 说明：当前项目没有“置顶申请列表查询接口”，这里需要先把 @topRequestIdManual 改成真实申请 ID。
+PUT {{baseUrl}}/admin/top-requests/{{topRequestIdManual}}/approve
+Authorization: Bearer {{adminToken}}
+
+### 49. 管理员驳回置顶申请
+# 说明：如果你要测试驳回，请把 topRequestIdManual 换成另一条待审核置顶申请记录。
+PUT {{baseUrl}}/admin/top-requests/{{topRequestIdManual}}/reject
+Authorization: Bearer {{adminToken}}
+
+### 50. 管理员生成 AI 总结
+GET {{baseUrl}}/ai/admin-summary?startTime=2026-04-01%2000:00:00&endTime=2026-04-30%2023:59:59
+Authorization: Bearer {{adminToken}}

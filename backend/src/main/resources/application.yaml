@@ -1,0 +1,32 @@
+spring:
+  application:
+    name: campus-lost-found-backend
+
+  datasource:
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:campus_lost_found}?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:hzh1234}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  sql:
+    init:
+      mode: always
+  ai:
+    openai:
+      api-key: ${LLM_API_KEY}
+      base-url: ${LLM_BASE_URL}
+      chat:
+        options:
+          model: ${LLM_MODEL}
+
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
+app:
+  jwt:
+    secret: ${JWT_SECRET:qg-lost-found-secret-qg-lost-found-secret-123456}
+    expire-hours: ${JWT_EXPIRE_HOURS:72}
+
+
+
+  
