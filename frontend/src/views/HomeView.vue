@@ -102,8 +102,22 @@
         <el-form-item label="联系方式">
           <el-input v-model="itemForm.contactInfo" />
         </el-form-item>
-        <el-form-item label="图片地址">
-          <el-input v-model="itemForm.imageUrl" />
+        <el-form-item label="物品图片">
+          <div class="image-upload-row">
+            <el-upload
+              :show-file-list="false"
+              accept="image/jpeg,image/png,image/gif,image/webp"
+              :http-request="handleItemImageUpload"
+            >
+              <el-button type="primary" plain>选择本地图片上传</el-button>
+            </el-upload>
+            <el-button v-if="itemForm.imageUrl" link type="danger" @click="itemForm.imageUrl = ''">清除</el-button>
+          </div>
+          <div v-if="itemForm.imageUrl" class="image-preview-wrap">
+            <el-image :src="itemForm.imageUrl" fit="cover" class="image-preview" />
+            <span class="muted-text image-url-hint">{{ itemForm.imageUrl }}</span>
+          </div>
+          <div v-else class="muted-text">支持 jpg、png、gif、webp，最大 5MB，需先登录</div>
         </el-form-item>
         <el-form-item label="描述">
           <el-input v-model="itemForm.description" type="textarea" :rows="4" />
@@ -168,6 +182,7 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import type { UploadRequestOptions } from 'element-plus'
 import { useRouter } from 'vue-router'
 
 import {
@@ -176,6 +191,7 @@ import {
   regenerateFoundDescription,
   regenerateLostDescription,
 } from '@/api/ai'
+import { uploadImage } from '@/api/upload'
 import { createFoundItem, createLostItem, deleteFoundItem, deleteLostItem, listFoundItems, listLostItems, updateFoundItem, updateLostItem, resolveLostItem, claimFoundItem } from '@/api/items'
 import { addComment, listComments, submitReport, submitTopRequest } from '@/api/interaction'
 import ItemCard from '@/components/ItemCard.vue'
@@ -270,6 +286,23 @@ function resetItemForm() {
   itemForm.description = ''
   itemForm.imageUrl = ''
   itemForm.contactInfo = ''
+}
+
+async function handleItemImageUpload(options: UploadRequestOptions) {
+  const file = options.file as File
+  if (!file || !(file instanceof Blob)) {
+    ElMessage.warning('未选择有效文件')
+    options.onError?.(new Error('no file') as never)
+    return
+  }
+  try {
+    const url = await uploadImage(file)
+    itemForm.imageUrl = url
+    ElMessage.success('图片已上传')
+    options.onSuccess?.(url as never)
+  } catch (e) {
+    options.onError?.(e as Error)
+  }
 }
 
 function openCreateDialog(type: 1 | 2) {
@@ -483,6 +516,31 @@ onMounted(loadItems)
   display: grid;
   gap: 12px;
   margin-bottom: 20px;
+}
+
+.image-upload-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.image-preview-wrap {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.image-preview {
+  width: 160px;
+  height: 120px;
+  border-radius: 8px;
+}
+
+.image-url-hint {
+  font-size: 12px;
+  word-break: break-all;
 }
 
 @media (max-width: 900px) {

@@ -17,7 +17,10 @@
         <el-descriptions-item label="手机号">{{ profile.phone }}</el-descriptions-item>
         <el-descriptions-item label="联系方式">{{ profile.contactInfo || '未填写' }}</el-descriptions-item>
         <el-descriptions-item label="头像">
-          <a v-if="profile.avatarUrl" :href="profile.avatarUrl" target="_blank">查看头像</a>
+          <div v-if="profile.avatarUrl" class="avatar-preview-block">
+            <el-image :src="profile.avatarUrl" fit="cover" class="avatar-thumb" />
+            <a :href="profile.avatarUrl" target="_blank">原图链接</a>
+          </div>
           <span v-else>未设置</span>
         </el-descriptions-item>
         <el-descriptions-item label="角色">{{ profile.role === 1 ? '管理员' : '普通用户' }}</el-descriptions-item>
@@ -36,8 +39,21 @@
         <el-form-item label="联系方式">
           <el-input v-model="profileForm.contactInfo" />
         </el-form-item>
-        <el-form-item label="头像地址">
-          <el-input v-model="profileForm.avatarUrl" />
+        <el-form-item label="头像">
+          <div class="avatar-upload-row">
+            <el-upload
+              :show-file-list="false"
+              accept="image/jpeg,image/png,image/gif,image/webp"
+              :http-request="handleAvatarUpload"
+            >
+              <el-button type="primary" plain>选择本地图片上传</el-button>
+            </el-upload>
+            <el-button v-if="profileForm.avatarUrl" link type="danger" @click="profileForm.avatarUrl = ''">清除</el-button>
+          </div>
+          <div v-if="profileForm.avatarUrl" class="avatar-form-preview">
+            <el-image :src="profileForm.avatarUrl" fit="cover" class="avatar-thumb" />
+          </div>
+          <div v-else class="muted-text">支持 jpg、png、gif、webp，最大 5MB</div>
         </el-form-item>
         <el-button type="primary" @click="submitProfile">保存修改</el-button>
       </el-form>
@@ -64,7 +80,9 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
+import type { UploadRequestOptions } from 'element-plus'
 
+import { uploadImage } from '@/api/upload'
 import { changePassword, getCurrentUser, updateProfile } from '@/api/user'
 import type { UserInfo } from '@/types/api'
 
@@ -82,6 +100,23 @@ const passwordForm = reactive({
   newPassword: '',
   confirmPassword: '',
 })
+
+async function handleAvatarUpload(options: UploadRequestOptions) {
+  const file = options.file as File
+  if (!file || !(file instanceof Blob)) {
+    ElMessage.warning('未选择有效文件')
+    options.onError?.(new Error('no file') as never)
+    return
+  }
+  try {
+    const url = await uploadImage(file)
+    profileForm.avatarUrl = url
+    ElMessage.success('头像已上传，请点击保存修改写入资料')
+    options.onSuccess?.(url as never)
+  } catch (e) {
+    options.onError?.(e as Error)
+  }
+}
 
 async function loadProfile() {
   profile.value = await getCurrentUser()
@@ -112,5 +147,29 @@ onMounted(loadProfile)
 .profile-layout {
   display: grid;
   gap: 20px;
+}
+
+.avatar-upload-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.avatar-form-preview {
+  margin-top: 12px;
+}
+
+.avatar-preview-block {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.avatar-thumb {
+  width: 72px;
+  height: 72px;
+  border-radius: 8px;
 }
 </style>

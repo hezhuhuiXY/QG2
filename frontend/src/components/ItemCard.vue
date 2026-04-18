@@ -18,7 +18,11 @@
       <p><strong>{{ itemType === 1 ? '丢失时间' : '拾取时间' }}：</strong>{{ timeText }}</p>
       <p><strong>联系方式：</strong>{{ item.contactInfo || '未填写' }}</p>
       <p><strong>描述：</strong>{{ item.description || '暂无描述' }}</p>
-      <p v-if="item.imageUrl"><strong>图片：</strong><a :href="item.imageUrl" target="_blank">查看图片</a></p>
+      <div v-if="item.imageUrl" class="item-image-block">
+        <strong>图片：</strong>
+        <el-image :src="item.imageUrl" fit="cover" class="item-image-thumb" :preview-src-list="[item.imageUrl]" />
+        <a :href="item.imageUrl" target="_blank">原图链接</a>
+      </div>
     </div>
 
     <div class="item-actions">
@@ -91,6 +95,20 @@ const statusTag = computed(() => {
 
 .item-body p {
   margin: 8px 0;
+}
+
+.item-image-block {
+  margin: 8px 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.item-image-thumb {
+  width: 120px;
+  height: 90px;
+  border-radius: 8px;
 }
 
 .item-actions {

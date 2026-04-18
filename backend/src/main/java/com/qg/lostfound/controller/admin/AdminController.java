@@ -16,12 +16,6 @@ import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
 import java.time.LocalDateTime;
 import java.util.List;
-
-/**
- * 管理员后台控制层
- * 提供平台管理所需的全部接口：用户管理、物品管理、举报审核、置顶申请审核、数据统计
- *
- */
 @RestController
 @RequestMapping("/admin")
 @RequiredArgsConstructor
@@ -37,7 +31,7 @@ public class AdminController {
         checkAdmin(authorization);
         return Result.success(adminService.listUsers());
     }
-    //封禁用户
+
     @PutMapping("/users/{id}/ban")
     public Result<Void> banUser(
             @RequestHeader("Authorization") String authorization,
@@ -47,7 +41,7 @@ public class AdminController {
         adminService.banUser(adminUserId, id);
         return Result.success();
     }
-    //解封用户
+
     @PutMapping("/users/{id}/unban")
     public Result<Void> unbanUser(
             @RequestHeader("Authorization") String authorization,
@@ -57,7 +51,7 @@ public class AdminController {
         adminService.unbanUser(adminUserId, id);
         return Result.success();
     }
-   //删除失物信息
+
     @DeleteMapping("/lost-items/{id}")
     public Result<Void> deleteLostItem(
             @RequestHeader("Authorization") String authorization,
@@ -67,7 +61,7 @@ public class AdminController {
         adminService.deleteLostItemByAdmin(id);
         return Result.success();
     }
-    //删除拾物信息
+
     @DeleteMapping("/found-items/{id}")
     public Result<Void> deleteFoundItem(
             @RequestHeader("Authorization") String authorization,
@@ -77,14 +71,7 @@ public class AdminController {
         adminService.deleteFoundItemByAdmin(id);
         return Result.success();
     }
-    /**
-     * 获取平台统计数据（可按时间范围筛选）
-     *
-     * @param authorization token
-     * @param startTime 开始时间（可选）
-     * @param endTime 结束时间（可选）
-     * @return 平台统计数据视图对象
-     */
+
     @GetMapping("/stats")
     public Result<AdminStatsVO> getPlatformStats(
             @RequestHeader("Authorization") String authorization,
@@ -96,7 +83,7 @@ public class AdminController {
         checkAdmin(authorization);
         return Result.success(adminService.getPlatformStats(startTime, endTime));
     }
-    //管理员通过物品举报
+
     @PutMapping("/reports/{id}/approve")
     public Result<Void> approveReport(
             @RequestHeader("Authorization") String authorization,
@@ -107,7 +94,7 @@ public class AdminController {
         itemReportService.approveReport(adminUserId, id, dto);
         return Result.success();
     }
-    //管理员驳回举报
+
     @PutMapping("/reports/{id}/reject")
     public Result<Void> rejectReport(
             @RequestHeader("Authorization") String authorization,
@@ -118,7 +105,7 @@ public class AdminController {
         itemReportService.rejectReport(adminUserId, id, dto);
         return Result.success();
     }
-    //管理员接受置顶请求
+
     @PutMapping("/top-requests/{id}/approve")
     public Result<Void> approveTopRequest(
             @RequestHeader("Authorization") String authorization,
@@ -128,7 +115,7 @@ public class AdminController {
         topRequestService.approveTopRequest(adminUserId, id);
         return Result.success();
     }
-    //拒绝置顶请求
+
     @PutMapping("/top-requests/{id}/reject")
     public Result<Void> rejectTopRequest(
             @RequestHeader("Authorization") String authorization,

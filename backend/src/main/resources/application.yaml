@@ -17,6 +17,10 @@ spring:
       chat:
         options:
           model: ${LLM_MODEL}
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 10MB
 
 mybatis-plus:
   configuration:
@@ -26,7 +30,9 @@ app:
   jwt:
     secret: ${JWT_SECRET:qg-lost-found-secret-qg-lost-found-secret-123456}
     expire-hours: ${JWT_EXPIRE_HOURS:72}
-
+  upload:
+    dir: ${UPLOAD_DIR:${user.dir}/uploads}
+    max-image-size: ${UPLOAD_MAX_IMAGE_SIZE:5242880}
 
 
   
